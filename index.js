@@ -44,7 +44,7 @@ async function run() {
 
         app.get("/cart", async (req, res) => {
             const email = req.query.email;
-            console.log(email);
+            // console.log(email);
             if (!email) {
                 res.send([]);
             }
@@ -71,7 +71,13 @@ async function run() {
 
 
         app.post("/users", async (req , res)=>{
-            user = req.body;
+            const user = req.body;
+            const query = { email: user.email}
+            const existingId = await usersCollection.findOne(query)
+            console.log(existingId);
+            if(existingId){
+               return res.send({ message:'same user logged already'})
+            }
             const result = await usersCollection.insertOne(user)
             res.send(result)
         })
