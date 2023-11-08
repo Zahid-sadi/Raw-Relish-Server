@@ -29,6 +29,7 @@ async function run() {
         const itemsCollection = client.db("rawRelishDb").collection("items");
         const reviewsCollection = client.db("rawRelishDb").collection("reviews");
         const cartCollection = client.db("rawRelishDb").collection("cart");
+        const usersCollection = client.db("rawRelishDb").collection("users");
 
         app.get("/items", async (req, res) => {
             const result = await itemsCollection.find().toArray();
@@ -65,6 +66,13 @@ async function run() {
             const id = req.params.id;
             const query = { _id: new ObjectId(id)};
             const result = await cartCollection.deleteOne(query);
+            res.send(result)
+        })
+
+
+        app.post("/users", async (req , res)=>{
+            user = req.body;
+            const result = await usersCollection.insertOne(user)
             res.send(result)
         })
 
