@@ -1,13 +1,32 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
+const jwt = require('jsonwebtoken')
 require("dotenv").config();
 const port = process.env.PORT || 3000;
 
-// middlewere
+// middleware
 
 app.use(cors());
 app.use(express.json());
+
+
+// const verificationJWT = (req, res, next)=>{
+//     const authorization = req.headers.authorization;
+//     if(!authorization){
+//         return res.status(401).send({error: true , message: 'unauthorized-access'})
+
+//     }
+//     const token = authorization.split(' ')[1];
+//     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, decoded)=>{
+//         if(error){
+//             return res.status(401).send({error: true, message: 'unauthorized access'})
+//         }
+//         req.decoded = decoded;
+//         next();
+//     })
+
+// }
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.2hres75.mongodb.net/?retryWrites=true&w=majority`;
@@ -31,6 +50,9 @@ async function run() {
         const cartCollection = client.db("rawRelishDb").collection("cart");
         const usersCollection = client.db("rawRelishDb").collection("users");
 
+
+        
+
         app.get("/items", async (req, res) => {
             const result = await itemsCollection.find().toArray();
             res.send(result);
@@ -42,12 +64,18 @@ async function run() {
             res.send(result);
         });
 
-        app.get("/cart", async (req, res) => {
+        app.get("/cart",  async (req, res) => {
             const email = req.query.email;
-            // console.log(email);
+            console.log(email);
             if (!email) {
                 res.send([]);
             }
+
+            // const decodedEmail = req.decoded.email;
+            // if(email !== decodedEmail){
+            //     return res.status(403).send({error: true, message : 'forbidden access'})
+            // }
+
             const query = { email: email };
             const result = await cartCollection.find(query).toArray();
             res.send(result);
@@ -70,17 +98,59 @@ async function run() {
         })
 
 
+        // app.post('/jwt', (req, res)=>{
+        //     const user = req.body;
+        //     const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        //         expiresIn: "2 days"
+        //     });
+        //     res.send({token})
+        // })
+
+
+        app.get('/users', async (req, res)=>{
+            const result = await usersCollection.find().toArray()
+            res.send(result)
+        })
+
         app.post("/users", async (req , res)=>{
             const user = req.body;
             const query = { email: user.email}
             const existingId = await usersCollection.findOne(query)
-            console.log(existingId);
+            // console.log(existingId);
             if(existingId){
                return res.send({ message:'same user logged already'})
             }
             const result = await usersCollection.insertOne(user)
             res.send(result)
         })
+
+
+        // update admin
+
+        app.patch('/users/admin/:id', async (req, res)=>{
+            const id = req.params.id;
+            const filter =  { _id: new ObjectId(id)}
+            const updateDoc = {
+                $set: {
+                    role: 'admin'
+                },
+            };
+            const result = await usersCollection.updateOne(filter, updateDoc)
+            res.send(result)
+
+        })
+
+
+
+
+
+
+
+
+
+
+
+
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
