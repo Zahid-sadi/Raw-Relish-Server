@@ -14,6 +14,7 @@ app.use(express.json());
 
 const verificationJWT = (req, res, next)=>{
     const authorization = req.headers.authorization;
+    console.log(authorization);
     if(!authorization){
         return res.status(401).send({error: true , message: 'unauthorized-access'});
 
@@ -22,6 +23,7 @@ const verificationJWT = (req, res, next)=>{
 
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, decoded)=>{
         if(error){
+            console.log('jwt error', error);
             return res.status(401).send({
                 error: true, 
                 message: 'unauthorized access'})
@@ -31,6 +33,8 @@ const verificationJWT = (req, res, next)=>{
     })
 
 }
+
+
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.2hres75.mongodb.net/?retryWrites=true&w=majority`;
@@ -59,7 +63,7 @@ async function run() {
             const user = req.body;
             
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
-                expiresIn: '120s'
+                expiresIn: '10s'
             });
             res.send({token})
         })
@@ -67,13 +71,13 @@ async function run() {
 
         app.get('/users', async (req, res)=>{
             const result = await usersCollection.find().toArray()
+            console.log('users',result);
             res.send(result)
         })
 
         app.post("/users", async (req , res)=>{
             const user = req.body;
             const query = { email: user.email}
-            console.log(query);
             const existingId = await usersCollection.findOne(query)
             // console.log(existingId);
             if(existingId){
@@ -100,6 +104,24 @@ async function run() {
         })
 
 
+        // verify admin
+
+
+
+        app.get( '/users/admin/:email', verificationJWT, async (req, res)=>{
+            const email = req.params.email;
+
+            if(req.decoded.email !== email){
+                res.send({admin:false})
+            }
+
+            const query = { email: email }
+            const user = await usersCollection.findOne(query)
+            const result = { admin: user?.role === 'admin'}
+            res.send(result)
+        })
+
+
         
 
         app.get("/items", async (req, res) => {
@@ -115,12 +137,12 @@ async function run() {
 
 
 
-        app.get("/cart",  async (req, res) => {
+        app.get("/cart", verificationJWT ,  async  (req, res) => {
             const email = req.query.email;
             console.log(email);
 
             if (!email) {
-                res.send([]);
+               return  res.send([]);
             }
 
             const decodedEmail = req.decoded.email;
@@ -132,6 +154,7 @@ async function run() {
 
             const query = { email: email };
             const result = await cartCollection.find(query).toArray();
+            console.log(result);
             res.send(result);
            
         });
