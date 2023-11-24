@@ -142,6 +142,12 @@ async function run() {
             res.send(result);
         });
 
+        app.post('/items', async(req, res)=>{
+            const newItemAdd = req.body;
+            const result =await itemsCollection.insertOne(newItemAdd);
+            res.send(result)
+        })
+
         app.get("/review", async (req, res) => {
             const result = await reviewsCollection.find().toArray();
             
