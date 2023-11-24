@@ -14,7 +14,7 @@ app.use(express.json());
 
 const verificationJWT = (req, res, next)=>{
     const authorization = req.headers.authorization;
-    console.log(authorization);
+    // console.log(authorization);
     if(!authorization){
         return res.status(401).send({error: true , message: 'unauthorized-access'});
 
@@ -23,7 +23,7 @@ const verificationJWT = (req, res, next)=>{
 
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, decoded)=>{
         if(error){
-            console.log('jwt error', error);
+            // console.log('jwt error', error);
             return res.status(401).send({
                 error: true, 
                 message: 'unauthorized access'})
@@ -84,7 +84,7 @@ async function run() {
 
         app.get('/users',verificationJWT,adminVerification, async (req, res)=>{
             const result = await usersCollection.find().toArray()
-            console.log('users',result);
+            // console.log('users',result);
             res.send(result)
         })
 
@@ -142,9 +142,20 @@ async function run() {
             res.send(result);
         });
 
-        app.post('/items', async(req, res)=>{
+        app.post('/items/', async(req, res)=>{
             const newItemAdd = req.body;
             const result =await itemsCollection.insertOne(newItemAdd);
+            console.log(result);
+            res.send(result)
+        })
+
+
+        app.delete('/items/:id', verificationJWT, adminVerification, async (req, res)=>{
+            const id = req.params.id;
+            console.log('deleted id',id);
+            const query = {_id: new ObjectId(id)}
+            const result = await itemsCollection.deleteOne(query);
+            console.log('delete item',result);
             res.send(result)
         })
 
@@ -158,7 +169,7 @@ async function run() {
 
         app.get("/cart", verificationJWT ,  async  (req, res) => {
             const email = req.query.email;
-            console.log(email);
+            // console.log(email);
 
             if (!email) {
                return  res.send([]);
@@ -173,7 +184,7 @@ async function run() {
 
             const query = { email: email };
             const result = await cartCollection.find(query).toArray();
-            console.log(result);
+            // console.log(result);
             res.send(result);
            
         });
