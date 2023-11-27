@@ -125,7 +125,7 @@ async function run() {
             const email = req.params.email;
 
             if(req.decoded.email !== email){
-                res.send({admin:false})
+              return  res.send({admin:false})
             }
 
             const query = { email: email }
@@ -142,26 +142,66 @@ async function run() {
             res.send(result);
         });
 
+        app.get('/items/:id', async (req, res) => {
+            
+              const id = req.params.id;
+              const query = {_id: (id)} /** only id use for existing api  */
+
+              // const query = {_id: new ObjectId (id)} /** objectId use for new api data  */              console.log('items query id',query);
+          
+              const result = await itemsCollection.findOne(query);
+              res.send(result)
+
+          });
+          
+
         app.post('/items/', async(req, res)=>{
             const newItemAdd = req.body;
-            const result =await itemsCollection.insertOne(newItemAdd);
+            const result = await itemsCollection.insertOne(newItemAdd);
             console.log(result);
             res.send(result)
         })
 
+     
 
         app.delete('/items/:id', verificationJWT, adminVerification, async (req, res)=>{
             const id = req.params.id;
-            console.log('deleted id',id);
-            const query = {_id: new ObjectId(id)}
+            // console.log('deleted id',id);
+            // const query = {_id: new ObjectId(id)}
+            const query = {_id: (id)}
             const result = await itemsCollection.deleteOne(query);
-            console.log('delete item',result);
+            // console.log('delete item',result);
             res.send(result)
         })
 
+        app.patch('/items/:id', async (req, res)=>{
+            const id = req.params.id;
+            const query = {_id: (id)} /** only id use for existing api  */
+
+            // const query = {_id: new ObjectId (id)} /** objectId use for new api data  */
+            const updateDoc = {
+                $set: req.body
+                
+            }
+            const result = await itemsCollection.updateOne(query,updateDoc)
+            // console.log(result, 'updated item');
+            res.send(result)
+        })
+
+       
+
+
+
+
+
+
+
+
+
+
+
         app.get("/review", async (req, res) => {
             const result = await reviewsCollection.find().toArray();
-            
             res.send(result);
         });
 
