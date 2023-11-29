@@ -54,6 +54,7 @@ async function run() {
         const reviewsCollection = client.db("rawRelishDb").collection("reviews");
         const cartCollection = client.db("rawRelishDb").collection("cart");
         const usersCollection = client.db("rawRelishDb").collection("users");
+        const paymentCollection = client.db("rawRelishDb").collection("payment");
 
         app.post("/jwt", (req, res) => {
             const user = req.body;
@@ -227,8 +228,7 @@ async function run() {
 
         app.post("/create-payment-intent", verificationJWT, async (req, res) => {
             const {price} = req.body ;
-            const amount = price * 1000
-
+            const amount = parseInt(price * 1000)       
             const paymentIntent = await stripe.paymentIntents.create({
               amount: amount,
               currency: "usd",
@@ -243,8 +243,20 @@ async function run() {
           
 
 
-        
+          app.post('/payment', verificationJWT, async (req, res) => {
+            const payment = req.body;
+            const insertResult = await paymentCollection.insertOne(payment);
+      
+            const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
+            const deleteResult = await cartCollection.deleteMany(query)
+      
+            res.send({ insertResult, deleteResult });
+          })
+      
+          
+    
 
+          
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
