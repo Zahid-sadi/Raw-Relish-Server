@@ -129,7 +129,7 @@ async function run() {
             const docToDelete = await usersCollection.findOne(query);
             if (docToDelete) {
                 const result = await usersCollection.deleteOne(query);
-                console.log(result);
+                // console.log(result);
                return  res.send(result)
             } else {
                 console.log("Document not found.");
@@ -228,17 +228,20 @@ async function run() {
 
         app.post("/create-payment-intent", verificationJWT, async (req, res) => {
             const {price} = req.body ;
-            const amount = parseInt(price * 1000)       
-            const paymentIntent = await stripe.paymentIntents.create({
-              amount: amount,
-              currency: "usd",
-
-              payment_method_types: ['card']
-            });
-          
-            res.send({
-              clientSecret: paymentIntent.client_secret,
-            });
+            const amount = parseInt(price * 1000)   
+            if(price > 0)    {
+                const paymentIntent = await stripe.paymentIntents.create({
+                    amount: amount,
+                    currency: "usd",
+      
+                    payment_method_types: ['card']
+                  });
+                
+                  res.send({
+                    clientSecret: paymentIntent.client_secret,
+                  });
+            }
+       
           });
           
 
@@ -246,15 +249,37 @@ async function run() {
           app.post('/payment', verificationJWT, async (req, res) => {
             const payment = req.body;
             const insertResult = await paymentCollection.insertOne(payment);
+
+            console.log(payment);
+            if (payment && payment.cartItems) {
+                const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
+                const deleteResult = await cartCollection.deleteMany(query)
+          
+                res.send({ insertResult, deleteResult });
+                // Rest of your code using the query
+              } else {
+                // Handle the case where payment or cartItems is undefined
+                console.error("Payment or cartItems is undefined.");
+              }
       
-            const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
-            const deleteResult = await cartCollection.deleteMany(query)
-      
-            res.send({ insertResult, deleteResult });
+           
           })
       
           
-    
+          app.get('/admin-statistics', verificationJWT, adminVerification, async (req, res) => {
+            const users = await usersCollection.estimatedDocumentCount();
+            const estimatedItems = await itemsCollection.estimatedDocumentCount();
+            const orders = await paymentCollection.estimatedDocumentCount();
+            const payments = await paymentCollection.find().toArray();
+            const revenue = payments.reduce( ( total, payment) => total + payment.price, 0)
+      
+            res.send({
+              revenue,
+              users,
+              estimatedItems,
+              orders
+            })
+          })
 
           
         // Send a ping to confirm a successful connection
