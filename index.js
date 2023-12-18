@@ -145,42 +145,46 @@ async function run() {
 
         app.get("/items/:id", async (req, res) => {
             const id = req.params.id;
-            const query = { _id: id }; /** only id use for existing api  */
+            const query1 = { _id: id };  /** only id use for existing api  */
 
-            // const query = {_id: new ObjectId (id)} /** objectId use for new api data  */              console.log('items query id',query);
+            const query2 = {_id: new ObjectId (id)}  /** objectId use for new api data  */              
+            console.log('items query id',query1);
 
-            const result = await itemsCollection.findOne(query);
-            res.send(result);
+            const result1 = await itemsCollection.findOne(query1);
+            const result2 = await itemsCollection.findOne(query2);
+            res.send({result1, result2});
         });
 
         app.post("/items/", async (req, res) => {
             const newItemAdd = req.body;
             const result = await itemsCollection.insertOne(newItemAdd);
-            console.log(result);
+            // console.log(result);
             res.send(result);
         });
 
         app.delete("/items/:id", verificationJWT, adminVerification, async (req, res) => {
             const id = req.params.id;
             // console.log('deleted id',id);
-            // const query = {_id: new ObjectId(id)}
-            const query = { _id: id };
-            const result = await itemsCollection.deleteOne(query);
+            const query1 = {_id: new ObjectId(id)}
+            const query2 = { _id: id };
+            const result1 = await itemsCollection.deleteOne(query1);
+            const result2 = await itemsCollection.deleteOne(query2);
             // console.log('delete item',result);
-            res.send(result);
+            res.send({result1, result2});
         });
 
         app.patch("/items/:id", async (req, res) => {
             const id = req.params.id;
-            const query = { _id: id }; /** only id use for existing api  */
+            const query = { _id: id };   /** only id use for existing api  */
 
-            // const query = {_id: new ObjectId (id)}  /** objectId use for new api data  */
+            const query2 = {_id: new ObjectId (id)}   /** objectId use for new api data  */
             const updateDoc = {
                 $set: req.body,
             };
             const result = await itemsCollection.updateOne(query, updateDoc);
+            const result2 = await itemsCollection.updateOne(query2, updateDoc);
             // console.log(result, 'updated item');
-            res.send(result);
+            res.send({result,result2});
         });
 
         app.get("/cart", verificationJWT, async (req, res) => {
@@ -271,9 +275,9 @@ async function run() {
             const estimatedItems = await itemsCollection.estimatedDocumentCount();
             const orders = await paymentCollection.estimatedDocumentCount();
             const payments = await paymentCollection.find().toArray();
-            const revenue = payments.reduce( ( total, payment) => total + payment.price, 0)
+            const revenue = payments.reduce((total, payment) => total + parseFloat(payment.price), 0);
       
-            res.send({
+             return res.send({
               revenue,
               users,
               estimatedItems,
